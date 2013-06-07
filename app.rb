@@ -9,6 +9,7 @@ class Stager < Sinatra::Base
 
   register Sinatra::Flash
   register Sinatra::ConfigFile
+  helpers Sinatra::JSON
 
   config_file 'config.yml'
 
@@ -46,12 +47,17 @@ class Stager < Sinatra::Base
     !env['warden'].user.nil?
   end
 
-  get '/' do
-    if authenticated?
-      current_user.username
-    else
-      haml :index
+  def initialize
+    super
+    @octokit = Octokit::Client.new oauth_token: settings.base_repo[:access_token]
+    @forks = @octokit.forks(settings.base_repo[:name]).inject({}) do |hash, fork|
+      hash[fork.owner.login] = { fork: fork.name }
+      hash
     end
+  end
+
+  get '/' do
+    json @forks
   end
 
   get '/auth/login' do

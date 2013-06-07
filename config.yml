@@ -1,8 +1,8 @@
+base_repo:
+  name: ''
+  access_token: ''
+
 github:
-  base_repo:
-    login: ''
-    access_token: ''
-    repo_name: ''
   app_key: ''
   app_secret: ''
 
