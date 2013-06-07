@@ -1,6 +1,11 @@
 source 'http://rubygems.org'
 
 gem 'sinatra'
+gem 'sinatra-flash', require: 'sinatra/flash'
+gem 'warden'
+
+gem 'haml'
+gem 'bcrypt-ruby', require: 'bcrypt'
 
 gem 'thin'
 
