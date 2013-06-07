@@ -3,6 +3,7 @@ Bundler.require
 
 require './app/models.rb'
 require './config/config.rb'
+require './app/repo_manager.rb'
 
 class Stager < Sinatra::Base
   set :haml, :format => :html5
@@ -50,14 +51,11 @@ class Stager < Sinatra::Base
   def initialize
     super
     @octokit = Octokit::Client.new oauth_token: settings.base_repo[:access_token]
-    @forks = @octokit.forks(settings.base_repo[:name]).inject({}) do |hash, fork|
-      hash[fork.owner.login] = { fork: fork.name }
-      hash
-    end
+    @repo_man = RepoManager.new @octokit, settings.git_data_path, settings.base_repo[:name]
   end
 
   get '/' do
-    json @forks
+    json @repo_man.forks
   end
 
   get '/auth/login' do
