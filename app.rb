@@ -1,6 +1,7 @@
 require 'sinatra'
 
-require_relative 'models'
+require './config.rb'
+require './models.rb'
 
 get '/' do
   body 'it works!'

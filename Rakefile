@@ -9,7 +9,7 @@ task :default do
 end
 
 task :env do
-  require_relative 'app.rb'
+  require './app.rb'
 end
 
 namespace :db do
