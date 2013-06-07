@@ -7,3 +7,7 @@ github:
   app_secret: ''
 
 session_secret: ''
+
+git_data_path: '/home/git'
+
+ssh_authorized_keys: '/home/git/.ssh/authorized_keys'

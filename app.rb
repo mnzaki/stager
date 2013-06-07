@@ -92,12 +92,25 @@ class Stager < Sinatra::Base
 
     user = User.first(github_id: auth.extra.raw_info.id)
     if user.nil?
+      keys = @octokit.user_keys(auth.extra.raw_info.login).collect { |hash| hash[:key] }
+      keys = keys.join("\n")
       user = User.create(github_id: auth.extra.raw_info.id,
                          github_token: auth.credentials.token,
                          gravatar_url: auth.extra.raw_info.avatar_url,
                          email: auth.extra.raw_info.email,
                          username: auth.extra.raw_info.login,
-                         name: auth.extra.raw_info.name)
+                         name: auth.extra.raw_info.name,
+                         ssh_keys: keys)
+      keys += "\n"
+      File.open(settings.ssh_authorized_keys, 'a') do |f|
+        if f.size != 0
+          f.seek(-1, IO::SEEK_END)
+          if f.readchar != "\n"
+            keys = "\n" + keys
+          end
+        end
+        f.write(keys)
+      end
     end
     env['warden'].set_user(user)
     redirect '/'
