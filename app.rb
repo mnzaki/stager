@@ -39,8 +39,16 @@ class Stager < Sinatra::Base
     @current_user ||= env['warden'].user
   end
 
+  def authenticated?
+    !env['warden'].user.nil?
+  end
+
   get '/' do
-    haml :index
+    if authenticated?
+      current_user.username
+    else
+      haml :index
+    end
   end
 
   get '/auth/login' do
@@ -66,5 +74,23 @@ class Stager < Sinatra::Base
     session[:return_to] = env['warden.options'][:attempted_path]
     flash[:error] = env['warden.options'][:message]
     redirect '/auth/login'
+  end
+
+  get '/auth/github/callback' do
+    auth = request.env['omniauth.auth']
+    # FIXME
+    return 500 if auth.nil?
+
+    user = User.first(github_id: auth.extra.raw_info.id)
+    if user.nil?
+      user = User.create(github_id: auth.extra.raw_info.id,
+                         github_token: auth.credentials.token,
+                         gravatar_url: auth.extra.raw_info.avatar_url,
+                         email: auth.extra.raw_info.email,
+                         username: auth.extra.raw_info.login,
+                         name: auth.extra.raw_info.name)
+    end
+    env['warden'].set_user(user)
+    redirect '/'
   end
 end
