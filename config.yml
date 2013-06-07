@@ -1,0 +1,9 @@
+github:
+  base_repo:
+    login: ''
+    access_token: ''
+    repo_name: ''
+  app_key: ''
+  app_secret: ''
+
+session_secret: ''

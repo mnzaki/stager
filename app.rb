@@ -7,16 +7,21 @@ require './config/config.rb'
 class Stager < Sinatra::Base
   set :haml, :format => :html5
 
+  register Sinatra::Flash
+  register Sinatra::ConfigFile
+
+  config_file 'config.yml'
+
   configure :development do
     DataMapper::Logger.new($stdout, :debug)
   end
 
   DataMapper.setup(:default, "sqlite://#{settings.root}/#{settings.environment}.sqlite3")
 
-  use Rack::Session::Cookie, secret: ENV['SESSION_SECRET']
+  use Rack::Session::Cookie, secret: settings.session_secret
 
   use OmniAuth::Builder do
-    provider :github, ENV['GITHUB_KEY'], ENV['GITHUB_SECRET'], scope: 'user:email,repo'
+    provider :github, Stager.settings.github[:app_key], Stager.settings.github[:app_secret], scope: 'user:email,repo'
   end
 
   use Warden::Manager do |config|
@@ -27,8 +32,6 @@ class Stager < Sinatra::Base
                           action: '/auth/unauthenticated'
     config.failure_app = self
   end
-
-  register Sinatra::Flash
 
   def authenticate!
     env['warden'].authenticate!
