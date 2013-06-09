@@ -1,6 +1,8 @@
 # Keeps track of the repositories and branches we know about
 
 class RepoManager
+  attr_reader :forks
+
   def initialize(octokit, repos_path, base_repo)
     @octokit = octokit
     @repos_path = repos_path
@@ -18,9 +20,5 @@ class RepoManager
         @forks[username][:branches] = Rugged::Branch.each_name(repo, :local).to_a
       end
     end
-  end
-
-  def forks
-    @forks
   end
 end

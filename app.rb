@@ -4,6 +4,7 @@ Bundler.require
 require './app/models.rb'
 require './config/config.rb'
 require './app/repo_manager.rb'
+require './app/operations_manager.rb'
 
 class Stager < Sinatra::Base
   set :haml, :format => :html5
@@ -53,11 +54,13 @@ class Stager < Sinatra::Base
     super
     @octokit = Octokit::Client.new oauth_token: settings.base_repo[:access_token]
     @repo_man = RepoManager.new @octokit, settings.git_data_path, settings.base_repo[:name]
+    @op_man = OperationsManager.new settings.slots
   end
 
   get '/' do
     if authenticated?
-      haml :index, locals: { forks: @repo_man.forks.to_json }
+      haml :index, locals: { forks: @repo_man.forks.to_json,
+                             slots: @op_man.slots.to_json }
     else
       haml :login
     end
@@ -121,5 +124,11 @@ class Stager < Sinatra::Base
 
   get '/forks.json' do
     json @repo_man.forks
+  end
+
+  get '/slot/:slot' do |slot|
+  end
+
+  post '/slot/:slot/stage' do |slot|
   end
 end

@@ -1,16 +1,39 @@
 -content_for :head do
   :javascript
     // bootstrap data
+    slots_data = #{slots};
     forks_data = #{forks};
 
+  %link(rel='stylesheet' href='/fancybox/jquery.fancybox.css')
+
   %script(src='/js/jquery-1.9.1.min.js')
+  %script(src='/fancybox/jquery.fancybox.pack.js')
   %script(src='/js/knockout-2.2.1.js')
   %script(src='/js/app.js')
 
-%input.branch_filter(data-bind="value: filter, valueUpdate: 'afterkeydown'")
+#modals.hidden
+  %div#slot_chooser
+    %span(data-bind='if: to_stage()')
+      Choose a slot to stage <a data-bind='text: to_stage().fork.name'></a>'s <a data-bind='text: to_stage().name'></a> branch.
+    %div.slots(data-bind="foreach: slots")
+      %a.slot(href='#' data-bind='css: { used: !empty() }')
+        %span.name(data-bind='text: name')
+        %span.fork(data-bind='text: currentFork')
+        %span.branch(data-bind='text: currentBranch')
 
-%div(data-bind='foreach: forks')
+%h3 Slots
+#slot_status(data-bind='foreach: slots')
+  %div.slot
+    %span.name(data-bind='text: name')
+    %span.fork(data-bind='text: currentFork')
+    %span.branch(data-bind='text: currentBranch')
+
+%h3 Branches
+%input.branch_filter(data-bind="value: filter, valueUpdate: 'afterkeydown'")
+#forks(data-bind='foreach: forks')
   %div.fork
-    %span(data-bind='text: fork_name')
+    %span(data-bind='text: name')
     %div(data-bind='foreach: branches')
-      %div.fork_branch(data-bind='text: $data, visible: $root.branch_matches($parent, $data)')
+      %div.fork_branch(data-bind='visible: matches($root.filter_regex())')
+        %span(data-bind='text: name')
+        %a.stage(href='#') Stage!
