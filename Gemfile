@@ -1,7 +1,7 @@
 source 'http://rubygems.org'
 
 gem 'sinatra', require: 'sinatra/base'
-gem 'sinatra-contrib', require: ['sinatra/config_file', 'sinatra/json']
+gem 'sinatra-contrib', require: ['sinatra/config_file', 'sinatra/json', 'sinatra/content_for']
 gem 'sinatra-flash', require: 'sinatra/flash'
 gem 'warden'
 

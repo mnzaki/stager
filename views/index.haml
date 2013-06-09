@@ -1,2 +1,16 @@
-%p
-  Welcome to Trustious Stager!
+-content_for :head do
+  :javascript
+    // bootstrap data
+    forks_data = #{forks};
+
+  %script(src='/js/jquery-1.9.1.min.js')
+  %script(src='/js/knockout-2.2.1.js')
+  %script(src='/js/app.js')
+
+%input.branch_filter(data-bind="value: filter, valueUpdate: 'afterkeydown'")
+
+%div(data-bind='foreach: forks')
+  %div.fork
+    %span(data-bind='text: fork_name')
+    %div(data-bind='foreach: branches')
+      %div.fork_branch(data-bind='text: $data, visible: $root.branch_matches($parent, $data)')

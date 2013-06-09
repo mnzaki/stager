@@ -11,6 +11,7 @@ class Stager < Sinatra::Base
   register Sinatra::Flash
   register Sinatra::ConfigFile
   helpers Sinatra::JSON
+  helpers Sinatra::ContentFor
 
   config_file 'config.yml'
 
@@ -55,7 +56,11 @@ class Stager < Sinatra::Base
   end
 
   get '/' do
-    json @repo_man.forks
+    if authenticated?
+      haml :index, locals: { forks: @repo_man.forks.to_json }
+    else
+      haml :login
+    end
   end
 
   get '/auth/login' do
@@ -112,5 +117,9 @@ class Stager < Sinatra::Base
     end
     env['warden'].set_user(user)
     redirect '/'
+  end
+
+  get '/forks.json' do
+    json @repo_man.forks
   end
 end
