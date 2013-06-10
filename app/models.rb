@@ -17,4 +17,14 @@ class User
   end
 end
 
+class ActiveSlot
+  include DataMapper::Resource
+
+  property :name,           String, key: true
+  property :current_fork,   String
+  property :current_branch, String
+  property :port,           Integer
+  property :pid,            Integer
+end
+
 DataMapper.finalize

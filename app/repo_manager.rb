@@ -21,4 +21,13 @@ class RepoManager
       end
     end
   end
+
+  def self.prepare_branch(app_dir, branch)
+    Dir.chdir app_dir do
+      system <<-SCRIPT
+        git checkout -f #{branch}
+        git pull
+      SCRIPT
+    end
+  end
 end

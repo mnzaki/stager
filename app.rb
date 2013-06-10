@@ -54,7 +54,7 @@ class Stager < Sinatra::Base
     super
     @octokit = Octokit::Client.new oauth_token: settings.base_repo[:access_token]
     @repo_man = RepoManager.new @octokit, settings.git_data_path, settings.base_repo[:name]
-    @op_man = OperationsManager.new settings.slots
+    @op_man = OperationsManager.new settings.git_data_path, settings.slots, settings.first_slot_port
   end
 
   get '/' do
@@ -130,5 +130,7 @@ class Stager < Sinatra::Base
   end
 
   post '/slot/:slot/stage' do |slot|
+    @op_man.stage(slot, params['fork'], params['branch'])
+    body 'ok'
   end
 end

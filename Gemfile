@@ -9,6 +9,7 @@ gem 'haml'
 gem 'bcrypt-ruby', require: 'bcrypt'
 
 gem 'thin'
+gem 'sidekiq'
 
 gem 'rake', require: false
 
