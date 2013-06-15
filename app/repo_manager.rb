@@ -22,6 +22,19 @@ class RepoManager
     end
   end
 
+  def update_branch_info(owner)
+    begin
+      repo = @forks[owner]
+      branches = @octokit.branches(owner + '/' + repo[:name])
+    rescue
+      return
+    else
+      repo[:branches] = branches.collect { |branch| branch.name }
+      return repo[:branches]
+    end
+    # FIXME read local stuff too
+  end
+
   def self.prepare_branch(app_dir, branch)
     Dir.chdir app_dir do
       system <<-SCRIPT

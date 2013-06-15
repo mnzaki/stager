@@ -126,6 +126,16 @@ class Stager < Sinatra::Base
     json @repo_man.forks
   end
 
+  # FIXME prefix URL with '.json'
+  get '/fork/:owner/:fork' do |owner, fork|
+    branches = @repo_man.update_branch_info(owner)
+    if branches.nil?
+      return 500
+    else
+      json @repo_man.forks[owner]
+    end
+  end
+
   get '/slot/:slot' do |slot|
   end
 

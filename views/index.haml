@@ -33,6 +33,7 @@
 #forks(data-bind='foreach: forks')
   %div.fork
     %span(data-bind='text: name')
+    %a.refresh_fork(href='#') Refresh
     %div(data-bind='foreach: branches')
       %div.fork_branch(data-bind='visible: matches($root.filter_regex())')
         %span(data-bind='text: name')
