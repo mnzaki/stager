@@ -1,4 +1,4 @@
-# Secrets!
+# Secrets! These can be specified in secrets.yml instead
 base_repo:
   name: ''
   access_token: ''

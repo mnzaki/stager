@@ -14,7 +14,7 @@ class Stager < Sinatra::Base
   helpers Sinatra::JSON
   helpers Sinatra::ContentFor
 
-  config_file 'config.yml'
+  config_file 'config.yml', 'secrets.yml'
 
   configure :development do
     DataMapper::Logger.new($stdout, :debug)
