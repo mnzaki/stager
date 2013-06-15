@@ -49,7 +49,7 @@ function ViewModel(forks_data) {
   this.filter = ko.observable('');
 
   this.filter_regex = ko.computed(function() {
-    return RegExp(this.filter().trim().split(' ').join('.*'));
+    return RegExp(this.filter().trim().split(' ').join('.*'), 'i');
   }, this);
 
   this.to_stage = ko.observable();
