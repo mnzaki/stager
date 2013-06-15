@@ -1,9 +1,16 @@
-%form(action="/auth/login" method="post")
-  %p
-    Username: 
-    %input(type="text" name="user[username]")
-  %p
-    Password:
-    %input(type="password" name="user[password]")
+%div#login
+  %div#credentials_login
+  %form(action="/auth/login" method="post")
+    %p
+      Username:
+      %input(type="text" name="user[username]")
+    %p
+      Password:
+      %input(type="password" name="user[password]")
 
-  %input(type="submit" value="Log In")
+    %input(type="submit" value="Log In")
+
+  %span#loging_or OR
+
+  %div#github_login
+    %a(href='/auth/github') Github Login
