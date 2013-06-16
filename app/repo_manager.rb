@@ -3,16 +3,15 @@
 class RepoManager
   attr_reader :forks
 
-  def initialize(octokit, repos_path, base_repo)
+  def initialize(octokit)
     @octokit = octokit
-    @repos_path = repos_path
-    @base_repo = base_repo
-    @forks = @octokit.forks(base_repo).inject({}) do |hash, fork|
+
+    @forks = @octokit.forks(Stager.settings.base_repo[:name]).inject({}) do |hash, fork|
       hash[fork.owner.login] = { name: fork.name }
       hash
     end
 
-    Dir.glob("#{@repos_path}/*/*").each do |dir|
+    Dir.glob("#{Stager.settings.git_data_path}/*/*").each do |dir|
       next if !File.directory?(dir)
       username = dir.split('/')[-2]
       if @forks.has_key?(username)

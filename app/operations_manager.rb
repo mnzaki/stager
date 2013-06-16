@@ -1,10 +1,9 @@
 class OperationsManager
   attr_reader :slots
 
-  def initialize(git_data_path, slots, slot_port)
-    @git_data_path = git_data_path
-
-    @slots = slots.inject({}) do |hash, slot|
+  def initialize
+    slot_port = Stager.settings.first_slot_port
+    @slots = Stager.settings.slots.inject({}) do |hash, slot|
       hash[slot] = { currentFork: nil, currentBranch: nil, port: slot_port}
       slot_port += 1
       hash
@@ -21,13 +20,19 @@ class OperationsManager
   end
 
   def stage(slot_name, fork_name, branch_name)
-    app_dir = File.join(@git_data_path, fork_name)
-    OperationsManager.delay.start_app(@slots[slot_name], app_dir, branch_name)
+    @slots[slot_name].merge!({
+      currentFork: fork_name,
+      currentBranch: branch_name
+    })
+    OperationsManager.delay.start_app(slot_name, @slots[slot_name])
   end
 
-  def self.start_app(slot, app_dir, branch_name)
+  def self.start_app(slot_name, slot)
     Bundler.with_clean_env do
-      RepoManager.prepare_branch(app_dir, branch_name)
+      url = Octokit::Repositories.new(slot[:currentFork]).url
+      app_dir = File.join(Stager.settings.git_data_path, slot[:currentFork])
+      RepoManager.prepare_repo(app_dir, url)
+      RepoManager.prepare_branch(app_dir, slot[:currentBranch])
 
       Dir.chdir app_dir do
         system <<-SCRIPT
