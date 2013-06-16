@@ -47,7 +47,7 @@ class OperationsManagerWorker
     slot = ActiveSlot.get(slot_name)
     app_dir = File.join(Stager.settings.git_data_path, slot.current_fork)
 
-    self.total = 5
+    self.total = 6
 
     Dir.chdir app_dir do
       if slot.app_pid != -1
@@ -57,6 +57,7 @@ class OperationsManagerWorker
             kill #{slot.app_pid} &> /dev/null
             sleep 1
           done
+          ./script/delayed_job stop
         SCRIPT
       end
       slot.attributes = { app_pid: -1 }
@@ -81,10 +82,17 @@ class OperationsManagerWorker
         at(4, 'Precompiling Assets')
         system 'bundle exec rake assets:precompile'
 
-        at(5, 'Starting server')
-        if system("rails server -p #{slot[:port]} -d")
+        at(5, 'Starting app server')
+        if system("bundle exec rails server -p #{slot[:port]} -d")
           pid = File.read('tmp/pids/server.pid')
           slot.attributes = { app_pid: pid }
+        else
+          raise 'Failed to start the application'
+        end
+
+        at(6, "Starting delayed_job worker")
+        unless system('./script/delayed_job start')
+          raise 'Failed to start delayed_job worker'
         end
 
         ENV.delete 'RAILS_ENV'
