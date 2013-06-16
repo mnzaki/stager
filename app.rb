@@ -140,7 +140,11 @@ class Stager < Sinatra::Base
   end
 
   post '/slot/:slot/stage' do |slot|
-    @op_man.stage(slot, params['fork'], params['branch'])
-    body 'ok'
+    if @op_man.stage(slot, params['fork'], params['branch'])
+      return 200
+    else
+      #FIXME error message
+      return 500
+    end
   end
 end

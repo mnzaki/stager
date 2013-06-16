@@ -34,9 +34,20 @@ class RepoManager
     # FIXME read local stuff too
   end
 
+  def self.prepare_repo(app_dir, url)
+    if !File.exists?(app_dir)
+      Dir.chdir(File.dirname(app_dir)) do
+        system <<-SCRIPT
+          git clone #{url}
+        SCRIPT
+      end
+    end
+  end
+
   def self.prepare_branch(app_dir, branch)
     Dir.chdir app_dir do
       system <<-SCRIPT
+        git fetch
         git checkout -f #{branch}
         git pull
       SCRIPT

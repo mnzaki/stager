@@ -10,6 +10,7 @@ gem 'bcrypt-ruby', require: 'bcrypt'
 
 gem 'thin'
 gem 'sidekiq'
+gem 'sidekiq_status', git: 'https://github.com/cryo28/sidekiq_status.git'
 gem 'slim'
 
 gem 'rake', require: false

@@ -36,7 +36,7 @@ function Slot(name, currentFork, currentBranch) {
 function ViewModel(forks_data) {
   var slots = [];
   $.each(slots_data, function (slot, info) {
-    slots.push(new Slot(slot, info.currentFork, info.currentBranch));
+    slots.push(new Slot(slot, info.current_fork, info.current_branch));
   });
   this.slots = ko.observableArray(slots);
 
