@@ -10,6 +10,7 @@ gem 'bcrypt-ruby', require: 'bcrypt'
 
 gem 'thin'
 gem 'sidekiq'
+gem 'slim'
 
 gem 'rake', require: false
 

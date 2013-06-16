@@ -1,3 +1,10 @@
 require './app.rb'
+require 'sidekiq/web'
 
-run Stager.new
+map '/' do
+  run Stager.new
+end
+
+map '/sidekiq' do
+  run Sidekiq::Web
+end
