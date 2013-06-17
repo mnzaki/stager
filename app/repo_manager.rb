@@ -34,22 +34,39 @@ class RepoManager
     # FIXME read local stuff too
   end
 
-  def self.prepare_repo(app_dir, url)
-    if !File.exists?(app_dir)
-      Dir.chdir(File.dirname(app_dir)) do
-        system <<-SCRIPT
-          git clone #{url}
-        SCRIPT
+  def self.repo_dir(repo_name)
+    File.join(Stager.settings.git_data_path, repo_name)
+  end
+
+  def self.clone_url(repo_name)
+    "https://#{Stager.settings.base_repo[:access_token]}@github.com/#{repo_name}"
+  end
+
+  def self.prepare_repo(repo_name, use_reference = true)
+    dir = RepoManager.repo_dir repo_name
+    url = RepoManager.clone_url repo_name
+    if !File.exists?(dir)
+      user_dir = File.dirname(dir)
+      FileUtils.mkdir_p user_dir
+      Dir.chdir(user_dir) do
+        if use_reference
+          base_repo = RepoManager.repo_dir Stager.settings.base_repo[:name]
+          system "git clone --reference #{base_repo} #{url}"
+        else
+          system "git clone #{url}"
+        end
       end
     end
   end
 
-  def self.prepare_branch(app_dir, branch)
-    Dir.chdir app_dir do
+  def self.prepare_branch(repo_name, branch_name)
+    RepoManager.prepare_repo repo_name
+    dir = RepoManager.repo_dir repo_name
+    Dir.chdir dir do
       system <<-SCRIPT
-        git fetch
-        git checkout -f #{branch}
-        git pull
+        git fetch origin #{branch_name}
+        git checkout -f #{branch_name}
+        git reset --hard origin/#{branch_name}
       SCRIPT
     end
   end
