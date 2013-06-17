@@ -1,8 +1,8 @@
 -content_for :head do
   :javascript
     // bootstrap data
-    slots_data = #{slots};
-    forks_data = #{forks};
+    slots_info = #{slots_info};
+    forks_info = #{forks_info};
 
   %link(rel='stylesheet' href='/fancybox/jquery.fancybox.css')
 
@@ -27,6 +27,7 @@
     %span.name(data-bind='text: name')
     %span.fork(data-bind='text: currentFork')
     %span.branch(data-bind='text: currentBranch')
+    %span.status(data-bind='text: status')
 
 %h3 Branches
 %input.branch_filter(data-bind="value: filter, valueUpdate: 'afterkeydown'")

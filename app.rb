@@ -59,8 +59,8 @@ class Stager < Sinatra::Base
 
   get '/' do
     if authenticated?
-      haml :index, locals: { forks: @repo_man.forks.to_json,
-                             slots: @op_man.slots.to_json }
+      haml :index, locals: { forks_info: @repo_man.forks.to_json,
+                             slots_info: @op_man.slots_info.to_json }
     else
       haml :login
     end
@@ -134,6 +134,10 @@ class Stager < Sinatra::Base
     else
       json @repo_man.forks[owner]
     end
+  end
+
+  get '/slots.json' do
+    json @op_man.slots_info
   end
 
   get '/slot/:slot' do |slot|

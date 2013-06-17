@@ -1,3 +1,6 @@
+var slots_info_update_interval = 2000;
+var vm;
+
 function Branch(fork, name) {
   this.fork = fork;
   this.name = name;
@@ -23,25 +26,22 @@ function Fork(owner, name, branches) {
   this.setBranches(branches || [])
 }
 
-function Slot(name, currentFork, currentBranch) {
+function Slot(name, currentFork, currentBranch, status) {
   this.name = name;
   this.currentFork = currentFork;
   this.currentBranch = currentBranch;
+  this.status = status;
 
   this.empty = ko.computed(function () {
     return !this.currentFork;
   });
 }
 
-function ViewModel(forks_data) {
-  var slots = [];
-  $.each(slots_data, function (slot, info) {
-    slots.push(new Slot(slot, info.current_fork, info.current_branch));
-  });
-  this.slots = ko.observableArray(slots);
+function ViewModel(forks_info) {
+  this.slots = ko.observableArray([]);
 
   var forks = [];
-  $.each(forks_data, function (owner, info) {
+  $.each(forks_info, function (owner, info) {
     forks.push(new Fork(owner, info.name, info.branches));
   });
   this.forks = ko.observable(forks);
@@ -53,18 +53,32 @@ function ViewModel(forks_data) {
   }, this);
 
   this.to_stage = ko.observable();
+
+  this.setSlots = function (slots_info) {
+    var slots = [];
+    $.each(slots_info, function (slot, info) {
+      slots.push(new Slot(info.name, info.current_fork, info.current_branch, info.status));
+    });
+    this.slots(slots);
+  };
+}
+
+function update_slots_info(data, textStatus, jqXHR) {
+  vm.setSlots(data);
+  setTimeout(function () { $.getJSON('/slots.json', update_slots_info); },
+             slots_info_update_interval);
 }
 
 // AJAX handlers
 function handle_stage_response(data, textStatus, jqXHR) {
 }
 
-function handle_fork_response(koData, jsonData) {
+function handle_fork_info_response(koData, jsonData) {
   koData.setBranches(jsonData.branches);
 }
 
 $(function() {
-  var vm = new ViewModel(forks_data);
+  vm = new ViewModel(forks_info);
   ko.applyBindings(vm);
 
   $('#forks')
@@ -78,7 +92,7 @@ $(function() {
     e.preventDefault();
     var koData = ko.dataFor(this);
     $.getJSON('/fork/' + koData.name + '.json', function (data, textStatus, jqXHR) {
-      handle_fork_response(koData, data);
+      handle_fork_info_response(koData, data);
     });
   });
 
@@ -93,4 +107,5 @@ $(function() {
     $.fancybox.close($(this));
   });
 
+  update_slots_info(slots_info, null, null);
 });

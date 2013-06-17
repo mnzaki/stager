@@ -9,10 +9,8 @@ class OperationsManager
       hash
     end
 
-    ActiveSlot.all.each do |active|
-      next if !@slots.include?(active.name)
-      @slots[active.name] = active
-    end
+    @slots_info_ts = Time.now - 42
+    slots_info
   end
 
   def stage(slot_name, fork_name, branch_name)
@@ -38,6 +36,28 @@ class OperationsManager
     return false
   end
 
+  def slots_info
+    return @slots_info if (Time.now - @slots_info_ts) < 1.5
+    @slots_info_ts = Time.now
+
+    ActiveSlot.all.each do |active|
+      next if !@slots.include?(active.name)
+      @slots[active.name] = active
+    end
+
+    @slots_info = @slots.collect do |slot_name, slot|
+      attrs = slot.attributes
+      if slot.job_id != -1
+        container = SidekiqStatus::Container.load(slot.job_id)
+        attrs[:status] = container.message
+      elsif slot.app_pid != -1
+        attrs[:status] = 'Live'
+      else
+        attrs[:status] = 'Idle'
+      end
+      attrs
+    end
+  end
 end
 
 class OperationsManagerWorker
