@@ -78,6 +78,10 @@ class OperationsManagerWorker
   end
 
   def perform(slot_name, fork_name, branch_name)
+    # HORRENDOUS HACK to avoid sqlite database locks
+    # FIXME FIXME FIXME
+    sleep 1
+    # /FIXME
     slot = ActiveSlot.get(slot_name)
 
     self.total = 6
