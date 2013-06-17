@@ -122,7 +122,9 @@ class OperationsManagerWorker
         system 'bundle'
 
         at(4, 'Precompiling Assets')
-        system 'bundle exec rake assets:precompile'
+        if !system('bundle exec rake assets:precompile')
+          raise 'Failed to precompile assets'
+        end
 
         at(5, 'Starting app server')
         # note: 'sleep 1' because sometimes server.pid is not yet created
