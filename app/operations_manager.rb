@@ -13,6 +13,10 @@ class OperationsManager
     slots_info
   end
 
+  def self.app_dir(fork_name)
+    File.join(Stager.settings.git_data_path, fork_name)
+  end
+
   def stage(slot_name, fork_name, branch_name)
     #FIXME can't stage multiple branches from same repo using current method :/
     if @slots.include?(slot_name)
@@ -69,12 +73,11 @@ class OperationsManagerWorker
 
   def perform(slot_name, fork_name, branch_name)
     slot = ActiveSlot.get(slot_name)
-    app_dir = File.join(Stager.settings.git_data_path, slot.current_fork)
 
     self.total = 6
 
-    Dir.chdir app_dir do
-      if slot.app_pid != -1
+    if slot.app_pid != -1 and !slot.current_fork.nil?
+      Dir.chdir OperationsManager.app_dir(slot.current_fork) do
         at(1, 'Stopping Server')
         system <<-SCRIPT
           while ps -p #{slot.app_pid} &> /dev/null; do
@@ -92,7 +95,7 @@ class OperationsManagerWorker
     slot.save
 
     url = Octokit::Repository.new(slot.current_fork).url
-    app_dir = File.join(Stager.settings.git_data_path, slot.current_fork)
+    app_dir = OperationsManager.app_dir slot.current_fork
 
     at(2, 'Update repository')
     RepoManager.prepare_repo(app_dir, url)
