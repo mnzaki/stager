@@ -65,6 +65,7 @@ end
 
 class OperationsManagerWorker
   include SidekiqStatus::Worker
+  sidekiq_options retry: false
 
   def perform(slot_name, fork_name, branch_name)
     slot = ActiveSlot.get(slot_name)
