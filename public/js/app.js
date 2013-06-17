@@ -26,11 +26,16 @@ function Fork(owner, name, branches) {
   this.setBranches(branches || [])
 }
 
-function Slot(name, currentFork, currentBranch, status) {
+function Slot(name, currentFork, currentBranch, status, port) {
   this.name = name;
   this.currentFork = currentFork;
   this.currentBranch = currentBranch;
   this.status = status;
+  this.port = port;
+
+  this.url = ko.computed(function() {
+    return "http://" + location.hostname + ":" + port;
+  });
 
   this.empty = ko.computed(function () {
     return !this.currentFork;
@@ -57,7 +62,7 @@ function ViewModel(forks_info) {
   this.setSlots = function (slots_info) {
     var slots = [];
     $.each(slots_info, function (slot, info) {
-      slots.push(new Slot(info.name, info.current_fork, info.current_branch, info.status));
+      slots.push(new Slot(info.name, info.current_fork, info.current_branch, info.status, info.port));
     });
     this.slots(slots);
   };

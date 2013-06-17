@@ -25,6 +25,7 @@
 #slot_status(data-bind='foreach: slots')
   %div.slot
     %span.name(data-bind='text: name')
+    %a.link(data-bind='text: url, attr: { href: url }')
     %span.fork(data-bind='text: currentFork')
     %span.branch(data-bind='text: currentBranch')
     %span.status(data-bind='text: status')
