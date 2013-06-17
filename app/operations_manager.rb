@@ -112,6 +112,7 @@ class OperationsManagerWorker
     Bundler.with_clean_env do
       Dir.chdir app_dir do
         ENV['RAILS_ENV'] = 'staging'
+        ENV['STAGING_HOST'] = "#{Stager.settings.host}:#{slot.port}"
 
         at(3, 'Creating Gem Bundle')
         system 'bundle'
