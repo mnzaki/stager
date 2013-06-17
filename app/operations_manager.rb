@@ -13,10 +13,6 @@ class OperationsManager
     slots_info
   end
 
-  def self.app_dir(fork_name)
-    File.join(Stager.settings.git_data_path, fork_name)
-  end
-
   def stage(slot_name, fork_name, branch_name)
     #FIXME can't stage multiple branches from same repo using current method :/
     if @slots.include?(slot_name)
@@ -71,21 +67,27 @@ class OperationsManagerWorker
   include SidekiqStatus::Worker
   sidekiq_options retry: false
 
+  def self.kill_app(pid)
+    system <<-SCRIPT
+      while ps -p #{pid} &> /dev/null; do
+        kill #{pid} &> /dev/null
+        sleep 1
+      done
+      ./script/delayed_job stop
+    SCRIPT
+  end
+
   def perform(slot_name, fork_name, branch_name)
     slot = ActiveSlot.get(slot_name)
 
     self.total = 6
 
+    # kill any app we know is taking up this slot
+    app_dir = RepoManager.repo_dir(slot.current_fork)
     if slot.app_pid != -1 and !slot.current_fork.nil?
-      Dir.chdir OperationsManager.app_dir(slot.current_fork) do
+      Dir.chdir app_dir do
         at(1, 'Stopping Server')
-        system <<-SCRIPT
-          while ps -p #{slot.app_pid} &> /dev/null; do
-            kill #{slot.app_pid} &> /dev/null
-            sleep 1
-          done
-          ./script/delayed_job stop
-        SCRIPT
+        OperationsManagerWorker.kill_app slot.app_pid
       end
       slot.app_pid = -1
     end
@@ -94,12 +96,18 @@ class OperationsManagerWorker
     slot.current_branch = branch_name
     slot.save
 
-    url = Octokit::Repository.new(slot.current_fork).url
-    app_dir = OperationsManager.app_dir slot.current_fork
+    # kill the current app if it is running and we don't know
+    app_dir = RepoManager.repo_dir slot.current_fork
+    if File.exists?('tmp/pids/server.pid')
+      pid = File.read('tmp/pids/server.pid')
+      Dir.chdir app_dir do
+        at(1, 'Stopping Server')
+        OperationsManagerWorker.kill_app pid
+      end
+    end
 
-    at(2, 'Update repository')
-    RepoManager.prepare_repo(app_dir, url)
-    RepoManager.prepare_branch(app_dir, slot.current_branch)
+    at(2, 'Updating repository')
+    RepoManager.prepare_branch(slot.current_fork, slot.current_branch)
 
     Bundler.with_clean_env do
       Dir.chdir app_dir do
@@ -112,7 +120,8 @@ class OperationsManagerWorker
         system 'bundle exec rake assets:precompile'
 
         at(5, 'Starting app server')
-        if system("bundle exec rails server -p #{slot[:port]} -d")
+        # note: 'sleep 1' because sometimes server.pid is not yet created
+        if system("bundle exec rails server -p #{slot[:port]} -d && sleep 1")
           pid = File.read('tmp/pids/server.pid')
           slot.app_pid = pid
           slot.save
