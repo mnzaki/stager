@@ -51,8 +51,8 @@ class OperationsManager
 
       if slot.job_id != ''
         container = SidekiqStatus::Container.load(slot.job_id)
-        attrs[:status] = container.message
-        attrs[:status] = 'Waiting' if attrs[:status].nil? or attrs[:status].empty?
+        attrs[:status] = container.message if container.status != 'failed'
+        attrs[:status] = container.status if attrs[:status].nil? or attrs[:status].empty?
       elsif slot.app_pid != -1
         attrs[:status] = 'Live'
       else
