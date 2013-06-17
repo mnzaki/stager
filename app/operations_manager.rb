@@ -87,8 +87,8 @@ class OperationsManagerWorker
     self.total = 6
 
     # kill any app we know is taking up this slot
-    app_dir = RepoManager.repo_dir(slot.current_fork)
     if slot.app_pid != -1 and !slot.current_fork.nil?
+      app_dir = RepoManager.repo_dir(slot.current_fork)
       Dir.chdir app_dir do
         at(1, 'Stopping Server')
         OperationsManagerWorker.kill_app slot.app_pid
