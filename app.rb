@@ -55,6 +55,8 @@ class Stager < Sinatra::Base
     @octokit = Octokit::Client.new oauth_token: settings.base_repo[:access_token]
     @repo_man = RepoManager.new @octokit
     @op_man = OperationsManager.new
+
+    RepoManager.prepare_repo Stager.settings.base_repo[:name], false
   end
 
   get '/' do
