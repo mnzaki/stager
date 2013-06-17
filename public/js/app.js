@@ -1,4 +1,4 @@
-var slots_info_update_interval = 2000;
+var slots_info_update_interval = 3100;
 var vm;
 
 function Branch(fork, name) {
@@ -63,10 +63,20 @@ function ViewModel(forks_info) {
   };
 }
 
-function update_slots_info(data, textStatus, jqXHR) {
+function schedule_update_slots_info() {
+  setTimeout(function () {
+    $.ajax({
+      url: '/slots.json',
+      dataType: 'json',
+      success: update_slots_info,
+      error: schedule_update_slots_info
+    });
+  }, slots_info_update_interval);
+}
+
+function update_slots_info(data) {
   vm.setSlots(data);
-  setTimeout(function () { $.getJSON('/slots.json', update_slots_info); },
-             slots_info_update_interval);
+  schedule_update_slots_info();
 }
 
 // AJAX handlers
@@ -96,7 +106,7 @@ $(function() {
     });
   });
 
-  $('#slot_chooser .slot').click(function (e) {
+  $('#slot_chooser').delegate('.slot', 'click', function (e) {
     e.preventDefault();
     var data = ko.dataFor(this);
     $.post('/slot/' + data.name + '/stage',

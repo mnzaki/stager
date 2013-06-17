@@ -27,7 +27,7 @@ class ActiveSlot
   property :port,           Integer
   property :app_pid,        Integer, default: -1
   # sidekiq job id
-  property :job_id,         Integer, default: -1
+  property :job_id,         String, default: ''
 end
 
 DataMapper.finalize

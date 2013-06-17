@@ -18,8 +18,8 @@
     %div.slots(data-bind="foreach: slots")
       %a.slot(href='#' data-bind='css: { used: !empty() }')
         %span.name(data-bind='text: name')
-        %span.fork(data-bind='text: currentFork')
-        %span.branch(data-bind='text: currentBranch')
+      %span.fork(data-bind='text: currentFork')
+      %span.branch(data-bind='text: currentBranch')
 
 %h3 Slots
 #slot_status(data-bind='foreach: slots')

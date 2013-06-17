@@ -20,16 +20,15 @@ class OperationsManager
       # ensure slot is in the database
       slot.save
 
-      if slot.job_id != -1
+      if slot.job_id != ''
         container = SidekiqStatus::Container.load(slot.job_id)
-        puts slot.job_id
-        puts container.status
         container.request_kill
       end
 
       jid = OperationsManagerWorker.perform_async(slot_name, fork_name, branch_name)
       if jid
-        slot.attributes = { job_id: jid }
+        slot.job_id = jid
+        slot.save
         return true
       end
     end
@@ -47,9 +46,13 @@ class OperationsManager
 
     @slots_info = @slots.collect do |slot_name, slot|
       attrs = slot.attributes
-      if slot.job_id != -1
+      attrs.delete :app_pid
+      attrs.delete :job_id
+
+      if slot.job_id != ''
         container = SidekiqStatus::Container.load(slot.job_id)
         attrs[:status] = container.message
+        attrs[:status] = 'Waiting' if attrs[:status].nil? or attrs[:status].empty?
       elsif slot.app_pid != -1
         attrs[:status] = 'Live'
       else
@@ -80,10 +83,12 @@ class OperationsManagerWorker
           ./script/delayed_job stop
         SCRIPT
       end
-      slot.attributes = { app_pid: -1 }
+      slot.app_pid = -1
     end
 
-    slot.attributes = { current_fork: fork_name, current_branch: branch_name }
+    slot.current_fork = fork_name
+    slot.current_branch = branch_name
+    slot.save
 
     url = Octokit::Repository.new(slot.current_fork).url
     app_dir = File.join(Stager.settings.git_data_path, slot.current_fork)
@@ -105,7 +110,8 @@ class OperationsManagerWorker
         at(5, 'Starting app server')
         if system("bundle exec rails server -p #{slot[:port]} -d")
           pid = File.read('tmp/pids/server.pid')
-          slot.attributes = { app_pid: pid }
+          slot.app_pid = pid
+          slot.save
         else
           raise 'Failed to start the application'
         end
