@@ -64,8 +64,8 @@ class RepoManager
     dir = RepoManager.repo_dir repo_name
     Dir.chdir dir do
       system <<-SCRIPT
-        git fetch origin #{branch_name}
-        git checkout -f #{branch_name}
+        git fetch &&
+        git checkout -f #{branch_name} &&
         git reset --hard origin/#{branch_name}
       SCRIPT
     end
