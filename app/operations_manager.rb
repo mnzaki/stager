@@ -65,12 +65,10 @@ class OperationsManager
   end
 
   def self.kill_process(pid)
-    tries = 10
     begin
       # kill it till it's dead
-      while tries > 0
+      10.times do
         Process.kill 'TERM', pid
-        tries -= 1
         sleep 0.5
       end
       Process.kill 'KILL', pid
@@ -157,16 +155,15 @@ class OperationsManagerWorker
         end
 
         at(6, 'Starting app server')
-        # note: 'sleep 1' because sometimes server.pid is not yet created
-        if OperationsManagerWorker.spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d && sleep 1")
-          pid = File.read('tmp/pids/server.pid').to_i
+        if OperationsManagerWorker.spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d")
+          pid = File.read(Stager.settings.staging_process_pid).to_i
           slot.app_pid = pid
           slot.save
         else
           raise 'Failed to start the application'
         end
 
-        at(7, "Starting delayed_job worker")
+        at(7, 'Starting delayed_job worker')
         unless OperationsManagerWorker.spawn_and_wait('./script/delayed_job start')
           raise 'Failed to start delayed_job worker'
         end
