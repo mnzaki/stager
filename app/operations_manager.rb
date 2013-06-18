@@ -68,12 +68,11 @@ class OperationsManager
     begin
       # kill it till it's dead
       10.times do
-        Process.kill 'TERM', pid
+        Process.kill 'TERM', pid.to_i
         sleep 0.5
       end
-      Process.kill 'KILL', pid
+      Process.kill 'KILL', pid.to_i
     rescue Errno::ESRCH
-      return true
     end
   end
 end
