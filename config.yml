@@ -18,7 +18,7 @@ staging_process_pid: 'tmp/pids/current_staging_process.pid'
 
 first_slot_port: 3000
 
-host: 'trustious-stager.no-ip.biz'
+host: 'stager.trustious.com'
 
 slots:
   - main
