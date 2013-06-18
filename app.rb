@@ -110,7 +110,7 @@ class Stager < Sinatra::Base
                          name: auth.extra.raw_info.name,
                          ssh_keys: keys)
       keys += "\n"
-      File.open(settings.ssh_authorized_keys, 'a') do |f|
+      File.open(settings.ssh_authorized_keys, 'a+') do |f|
         if f.size != 0
           f.seek(-1, IO::SEEK_END)
           if f.readchar != "\n"
