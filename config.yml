@@ -14,6 +14,8 @@ git_data_path: '/home/git'
 
 ssh_authorized_keys: '/home/git/.ssh/authorized_keys'
 
+staging_process_pid: 'tmp/pids/current_staging_process.pid'
+
 first_slot_port: 3000
 
 host: 'trustious-stager.no-ip.biz'

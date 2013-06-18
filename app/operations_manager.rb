@@ -1,3 +1,5 @@
+require 'fileutils'
+
 class OperationsManager
   attr_reader :slots
 
@@ -61,6 +63,21 @@ class OperationsManager
       attrs
     end
   end
+
+  def self.kill_process(pid)
+    tries = 10
+    begin
+      # kill it till it's dead
+      while tries > 0
+        Process.kill 'TERM', pid
+        tries -= 1
+        sleep 0.5
+      end
+      Process.kill 'KILL', pid
+    rescue Errno::ESRCH
+      return true
+    end
+  end
 end
 
 class OperationsManagerWorker
@@ -68,13 +85,15 @@ class OperationsManagerWorker
   sidekiq_options retry: false
 
   def self.kill_app(pid)
-    system <<-SCRIPT
-      while ps -p #{pid} &> /dev/null; do
-        kill #{pid} &> /dev/null
-        sleep 1
-      done
-      ./script/delayed_job stop
-    SCRIPT
+    OperationsManager.kill_process pid
+    system './script/delayed_job stop'
+  end
+
+  def self.spawn_and_wait command
+    pid = Process.spawn command
+    File.write(Stager.settings.staging_process_pid, pid)
+    Process.wait pid
+    $?.exitstatus == 0
   end
 
   def perform(slot_name, fork_name, branch_name)
@@ -84,13 +103,13 @@ class OperationsManagerWorker
     # /FIXME
     slot = ActiveSlot.get(slot_name)
 
-    self.total = 6
+    self.total = 7
 
+    at(1, 'Killing any running server')
     # kill any app we know is taking up this slot
     if slot.app_pid != -1 and !slot.current_fork.nil?
       app_dir = RepoManager.repo_dir(slot.current_fork)
       Dir.chdir app_dir do
-        at(1, 'Stopping Server')
         OperationsManagerWorker.kill_app slot.app_pid
       end
       slot.app_pid = -1
@@ -100,44 +119,55 @@ class OperationsManagerWorker
     slot.current_branch = branch_name
     slot.save
 
-    # kill the current app if it is running and we don't know
     app_dir = RepoManager.repo_dir slot.current_fork
-    if File.exists?('tmp/pids/server.pid')
-      pid = File.read('tmp/pids/server.pid')
-      Dir.chdir app_dir do
-        at(1, 'Stopping Server')
-        OperationsManagerWorker.kill_app pid
-      end
-    end
 
-    at(2, 'Updating repository')
+    # FIXME what if the branch to stage is already staged in another slot
+
+    at(3, 'Updating repository')
     RepoManager.prepare_branch(slot.current_fork, slot.current_branch)
 
     Bundler.with_clean_env do
       Dir.chdir app_dir do
+        # ensure the existance of the pids dir
+        FileUtils.mkdir_p(File.dirname(Stager.settings.staging_process_pid))
+
+        # stop any staging process currently running on this app
+        at(2, 'Killing old staging activity')
+        begin
+          pid = File.read(Stager.settings.staging_process_pid).to_i
+          OperationsManager.kill_process pid
+        rescue
+        end
+
+        # kill the current app if it is running and we don't know
+        if File.exists?('tmp/pids/server.pid')
+          pid = File.read('tmp/pids/server.pid')
+          OperationsManagerWorker.kill_app pid
+        end
+
         ENV['RAILS_ENV'] = 'staging'
         ENV['STAGING_HOST'] = "#{Stager.settings.host}:#{slot.port}"
 
-        at(3, 'Creating Gem Bundle')
-        system 'bundle'
+        at(4, 'Creating Gem Bundle')
+        OperationsManagerWorker.spawn_and_wait 'bundle install'
 
-        at(4, 'Precompiling Assets')
-        if !system('bundle exec rake assets:precompile')
+        at(5, 'Precompiling Assets')
+        if !OperationsManagerWorker.spawn_and_wait('bundle exec rake assets:precompile')
           raise 'Failed to precompile assets'
         end
 
-        at(5, 'Starting app server')
+        at(6, 'Starting app server')
         # note: 'sleep 1' because sometimes server.pid is not yet created
-        if system("bundle exec rails server -p #{slot[:port]} -d && sleep 1")
-          pid = File.read('tmp/pids/server.pid')
+        if OperationsManagerWorker.spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d && sleep 1")
+          pid = File.read('tmp/pids/server.pid').to_i
           slot.app_pid = pid
           slot.save
         else
           raise 'Failed to start the application'
         end
 
-        at(6, "Starting delayed_job worker")
-        unless system('./script/delayed_job start')
+        at(7, "Starting delayed_job worker")
+        unless OperationsManagerWorker.spawn_and_wait('./script/delayed_job start')
           raise 'Failed to start delayed_job worker'
         end
 
