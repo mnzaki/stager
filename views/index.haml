@@ -16,22 +16,31 @@
     %span(data-bind='if: to_stage()')
       Choose a slot to stage <a data-bind='text: to_stage().fork.name'></a>'s <a data-bind='text: to_stage().name'></a> branch.
     %div.slots(data-bind="foreach: slots")
-      %a.slot(href='#' data-bind='css: { used: !empty() }')
-        %span.name(data-bind='text: name')
-      %span.fork(data-bind='text: currentFork')
-      %span.branch(data-bind='text: currentBranch')
+      %div
+        %a.slot(href='#' data-bind='css: { used: !empty() }, text: name')
+        %span.fork(data-bind='text: currentFork')
+        %span.branch(data-bind='text: currentBranch')
+        %span.status(data-bind='text: status')
 
 %h3 Slots
-#slot_status(data-bind='foreach: slots')
-  %div.slot
+#slot_status.pure-g(data-bind='foreach: slots')
+  %div.slot.pure-u-1-4
     %span.name(data-bind='text: name')
     %a.link(data-bind='text: url, attr: { href: url }')
-    %span.fork(data-bind='text: currentFork')
-    %span.branch(data-bind='text: currentBranch')
-    %span.status(data-bind='text: status')
+    %div
+      Branch:
+      %span.fork(data-bind='text: currentFork')
+      %span.branch(data-bind='text: currentBranch')
+    %div
+      Status:
+      %span.status(data-bind='text: status')
 
 %h3 Branches
-%input.branch_filter(data-bind="value: filter, valueUpdate: 'afterkeydown'")
+
+#branch_filter
+  Filter:
+  %input(data-bind="value: filter, valueUpdate: 'afterkeydown'")
+
 #forks(data-bind='foreach: forks')
   %div.fork
     %span(data-bind='text: name')

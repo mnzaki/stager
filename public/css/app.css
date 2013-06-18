@@ -1,3 +1,7 @@
 .hidden {
   display: none;
 }
+
+#branch_filter {
+  margin: 20px 0;
+}
