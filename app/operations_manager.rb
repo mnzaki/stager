@@ -22,7 +22,7 @@ class OperationsManager
       # ensure slot is in the database
       slot.save
 
-      if slot.job_id != ''
+      if not slot.job_id.empty?
         container = SidekiqStatus::Container.load(slot.job_id)
         container.request_kill
       end
@@ -51,10 +51,18 @@ class OperationsManager
       attrs.delete :app_pid
       attrs.delete :job_id
 
-      if slot.job_id != ''
+      if not slot.job_id.empty?
         container = SidekiqStatus::Container.load(slot.job_id)
-        attrs[:status] = container.message if container.status != 'failed'
-        attrs[:status] = container.status if attrs[:status].nil? or attrs[:status].empty?
+        if container.status == 'failed'
+          attrs[:status] = container.payload
+        else
+          attrs[:status] =
+            if not container.message.empty?
+              container.message
+            else
+              container.status
+            end
+        end
       elsif slot.app_pid != -1
         attrs[:status] = 'Live'
       else
@@ -106,6 +114,15 @@ class OperationsManagerWorker
     File.read(file).to_i
   end
 
+  def do_or_die progress, msg, &block
+    at progress, msg
+    if not yield
+      msg = "Failed at: #{msg}"
+      self.payload = msg
+      raise msg
+    end
+  end
+
   def perform(slot_name, fork_name, branch_name)
     # HORRENDOUS HACK to avoid sqlite database locks
     # FIXME FIXME FIXME
@@ -115,7 +132,7 @@ class OperationsManagerWorker
 
     self.total = 7
 
-    at(1, 'Killing any running server')
+    at 1, 'Killing any running server'
     # kill any app we know is taking up this slot
     if slot.app_pid != -1 and !slot.current_fork.nil?
       @app_dir = RepoManager.repo_dir(slot.current_fork)
@@ -131,8 +148,9 @@ class OperationsManagerWorker
 
     # FIXME what if the branch to stage is already staged in another slot
 
-    at(3, 'Updating repository')
-    RepoManager.prepare_branch(slot.current_fork, slot.current_branch)
+    do_or_die 2, 'Updating repository' do
+      RepoManager.prepare_branch(slot.current_fork, slot.current_branch)
+    end
 
     Bundler.with_clean_env do
       @cur_process_pid_file = File.join(@app_dir, Stager.settings.staging_process_pid)
@@ -143,7 +161,7 @@ class OperationsManagerWorker
       FileUtils.mkdir_p(File.dirname(server_pid_file))
 
       # stop any staging process currently running on this app
-      at(2, 'Killing old staging activity')
+      at 3, 'Killing old staging activity'
       begin
         pid = read_pid(@cur_process_pid_file)
         OperationsManager.kill_process pid
@@ -159,27 +177,29 @@ class OperationsManagerWorker
       @app_env['RAILS_ENV'] = 'staging'
       @app_env['STAGING_HOST'] = "#{Stager.settings.host}:#{slot.port}"
 
-      at(4, 'Creating Gem Bundle')
-      spawn_and_wait 'bundle install'
-
-      at(5, 'Precompiling Assets')
-      if spawn_and_wait('bundle exec rake assets:precompile') < 0
-        raise 'Failed to precompile assets'
+      do_or_die 4, 'Creating Gem Bundle' do
+        spawn_and_wait('bundle install') > 0
       end
 
-      at(6, 'Starting app server')
-      pid = spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d")
-      if pid > 0
-        slot.app_pid = pid
-        slot.save
-      else
-        raise 'Failed to start the application'
+      do_or_die 5, 'Precompiling Assets' do
+        spawn_and_wait('bundle exec rake assets:precompile') > 0
       end
 
-      at(7, 'Starting delayed_job worker')
-      if spawn_and_wait('./script/delayed_job start') < 0
-        raise 'Failed to start delayed_job worker'
+      do_or_die 6, 'Starting app server' do
+        pid = spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d")
+        if pid > 0
+          slot.app_pid = pid
+          slot.save
+        end
+        pid > 0
       end
+
+      do_or_die 7, 'Starting delayed_job worker' do
+        spawn_and_wait('./script/delayed_job start') > 0
+      end
+
+      slot.job_id = ''
+      slot.save
     end
   end
 end
