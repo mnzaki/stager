@@ -81,16 +81,29 @@ class OperationsManagerWorker
   include SidekiqStatus::Worker
   sidekiq_options retry: false
 
-  def self.kill_app(pid)
-    OperationsManager.kill_process pid
-    system './script/delayed_job stop'
+  def initialize
+    @app_dir = ''
+    @app_env = {}
   end
 
-  def self.spawn_and_wait command
-    pid = Process.spawn command
-    File.write(Stager.settings.staging_process_pid, pid)
+  def kill_app(pid)
+    OperationsManager.kill_process pid
+    spawn_and_wait './script/delayed_job stop'
+  end
+
+  def spawn_and_wait command
+    pid = Process.spawn @app_env, command, chdir: @app_dir
+    File.write(@cur_process_pid_file, pid) if @cur_process_pid_file
     Process.wait pid
-    $?.exitstatus == 0
+    if $?.exitstatus == 0
+      pid
+    else
+      -1
+    end
+  end
+
+  def read_pid file
+    File.read(file).to_i
   end
 
   def perform(slot_name, fork_name, branch_name)
@@ -105,10 +118,8 @@ class OperationsManagerWorker
     at(1, 'Killing any running server')
     # kill any app we know is taking up this slot
     if slot.app_pid != -1 and !slot.current_fork.nil?
-      app_dir = RepoManager.repo_dir(slot.current_fork)
-      Dir.chdir app_dir do
-        OperationsManagerWorker.kill_app slot.app_pid
-      end
+      @app_dir = RepoManager.repo_dir(slot.current_fork)
+      kill_app slot.app_pid
       slot.app_pid = -1
     end
 
@@ -116,7 +127,7 @@ class OperationsManagerWorker
     slot.current_branch = branch_name
     slot.save
 
-    app_dir = RepoManager.repo_dir slot.current_fork
+    @app_dir = RepoManager.repo_dir slot.current_fork
 
     # FIXME what if the branch to stage is already staged in another slot
 
@@ -124,50 +135,50 @@ class OperationsManagerWorker
     RepoManager.prepare_branch(slot.current_fork, slot.current_branch)
 
     Bundler.with_clean_env do
-      Dir.chdir app_dir do
-        # ensure the existance of the pids dir
-        FileUtils.mkdir_p(File.dirname(Stager.settings.staging_process_pid))
+      @cur_process_pid_file = File.join(@app_dir, Stager.settings.staging_process_pid)
+      server_pid_file = File.join(@app_dir, Stager.settings.server_pid)
 
-        # stop any staging process currently running on this app
-        at(2, 'Killing old staging activity')
-        begin
-          pid = File.read(Stager.settings.staging_process_pid).to_i
-          OperationsManager.kill_process pid
-        rescue
-        end
+      # ensure the existance of the pids dir
+      FileUtils.mkdir_p(File.dirname(@cur_process_pid_file))
+      FileUtils.mkdir_p(File.dirname(server_pid_file))
 
-        # kill the current app if it is running and we don't know
-        if File.exists?('tmp/pids/server.pid')
-          pid = File.read('tmp/pids/server.pid')
-          OperationsManagerWorker.kill_app pid
-        end
+      # stop any staging process currently running on this app
+      at(2, 'Killing old staging activity')
+      begin
+        pid = read_pid(@cur_process_pid_file)
+        OperationsManager.kill_process pid
+      rescue
+      end
 
-        ENV['RAILS_ENV'] = 'staging'
-        ENV['STAGING_HOST'] = "#{Stager.settings.host}:#{slot.port}"
+      # kill the current app if it is running and we don't know
+      if File.exists?(server_pid_file)
+        pid = read_pid(server_pid_file)
+        kill_app pid
+      end
 
-        at(4, 'Creating Gem Bundle')
-        OperationsManagerWorker.spawn_and_wait 'bundle install'
+      @app_env['RAILS_ENV'] = 'staging'
+      @app_env['STAGING_HOST'] = "#{Stager.settings.host}:#{slot.port}"
 
-        at(5, 'Precompiling Assets')
-        if !OperationsManagerWorker.spawn_and_wait('bundle exec rake assets:precompile')
-          raise 'Failed to precompile assets'
-        end
+      at(4, 'Creating Gem Bundle')
+      spawn_and_wait 'bundle install'
 
-        at(6, 'Starting app server')
-        if OperationsManagerWorker.spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d")
-          pid = File.read(Stager.settings.staging_process_pid).to_i
-          slot.app_pid = pid
-          slot.save
-        else
-          raise 'Failed to start the application'
-        end
+      at(5, 'Precompiling Assets')
+      if spawn_and_wait('bundle exec rake assets:precompile') < 0
+        raise 'Failed to precompile assets'
+      end
 
-        at(7, 'Starting delayed_job worker')
-        unless OperationsManagerWorker.spawn_and_wait('./script/delayed_job start')
-          raise 'Failed to start delayed_job worker'
-        end
+      at(6, 'Starting app server')
+      pid = spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d")
+      if pid > 0
+        slot.app_pid = pid
+        slot.save
+      else
+        raise 'Failed to start the application'
+      end
 
-        ENV.delete 'RAILS_ENV'
+      at(7, 'Starting delayed_job worker')
+      if spawn_and_wait('./script/delayed_job start') < 0
+        raise 'Failed to start delayed_job worker'
       end
     end
   end

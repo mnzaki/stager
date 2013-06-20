@@ -48,13 +48,11 @@ class RepoManager
     if !File.exists?(dir)
       user_dir = File.dirname(dir)
       FileUtils.mkdir_p user_dir
-      Dir.chdir(user_dir) do
-        if use_reference
-          base_repo = RepoManager.repo_dir Stager.settings.base_repo[:name]
-          system "git clone --reference #{base_repo} #{url}"
-        else
-          system "git clone #{url}"
-        end
+      if use_reference
+        base_repo = RepoManager.repo_dir Stager.settings.base_repo[:name]
+        system "git clone --reference #{base_repo} #{url}", chdir: user_dir
+      else
+        system "git clone #{url}", chdir: user_dir
       end
     end
   end
@@ -62,12 +60,11 @@ class RepoManager
   def self.prepare_branch(repo_name, branch_name)
     RepoManager.prepare_repo repo_name
     dir = RepoManager.repo_dir repo_name
-    Dir.chdir dir do
-      system <<-SCRIPT
-        git fetch &&
-        git checkout -f #{branch_name} &&
-        git reset --hard origin/#{branch_name}
-      SCRIPT
-    end
+    system <<-SCRIPT
+      cd '#{dir}'
+      git fetch &&
+      git checkout -f #{branch_name} &&
+      git reset --hard origin/#{branch_name}
+    SCRIPT
   end
 end

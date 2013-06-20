@@ -15,6 +15,7 @@ git_data_path: '/home/git'
 ssh_authorized_keys: '/home/git/.ssh/authorized_keys'
 
 staging_process_pid: 'tmp/pids/current_staging_process.pid'
+server_pid: 'tmp/pids/server.pid'
 
 first_slot_port: 3000
 
