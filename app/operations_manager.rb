@@ -57,7 +57,7 @@ class OperationsManager
           attrs[:status] = container.payload
         else
           attrs[:status] =
-            if not container.message.empty?
+            if container.message and not container.message.empty?
               container.message
             else
               container.status
