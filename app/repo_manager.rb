@@ -61,7 +61,7 @@ class RepoManager
     RepoManager.prepare_repo repo_name
     dir = RepoManager.repo_dir repo_name
     system <<-SCRIPT
-      cd '#{dir}'
+      cd '#{dir}' &&
       git fetch &&
       git checkout -f #{branch_name} &&
       git reset --hard origin/#{branch_name}
