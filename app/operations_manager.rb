@@ -20,6 +20,7 @@ class OperationsManager
     if @slots.include?(slot_name)
       slot = @slots[slot_name]
       # ensure slot is in the database
+      slot.updated_at = Time.now
       slot.save
 
       if not slot.job_id.empty?
@@ -30,6 +31,7 @@ class OperationsManager
       jid = OperationsManagerWorker.perform_async(slot_name, fork_name, branch_name)
       if jid
         slot.job_id = jid
+        slot.updated_at = Time.now
         slot.save
         return true
       end
@@ -142,6 +144,7 @@ class OperationsManagerWorker
 
     slot.current_fork = fork_name
     slot.current_branch = branch_name
+    slot.updated_at = Time.now
     slot.save
 
     @app_dir = RepoManager.repo_dir slot.current_fork
@@ -189,6 +192,7 @@ class OperationsManagerWorker
         pid = spawn_and_wait("bundle exec rails server -p #{slot[:port]} -d")
         if pid > 0
           slot.app_pid = pid
+          slot.updated_at = Time.now
           slot.save
         end
         pid > 0
@@ -199,6 +203,7 @@ class OperationsManagerWorker
       end
 
       slot.job_id = ''
+      slot.updated_at = Time.now
       slot.save
     end
   end
