@@ -89,6 +89,9 @@ function update_slots_info(data) {
 function handle_stage_response(data, textStatus, jqXHR) {
 }
 
+function handle_update_lease_response(data, textStatus, jqXHR) {
+}
+
 function handle_fork_info_response(koData, jsonData) {
   koData.setBranches(jsonData.branches);
 }
@@ -121,6 +124,14 @@ $(function() {
       handle_stage_response
     );
     $.fancybox.close($(this));
+  });
+  
+  $('#slot_status').delegate('.update_lease', 'click', function (e) {
+    e.preventDefault();
+    var data = ko.dataFor(this);
+    $.post('/slot/' + data.name + '/update_lease', 
+        {},
+        handle_update_lease_response);
   });
 
   update_slots_info(slots_info, null, null);

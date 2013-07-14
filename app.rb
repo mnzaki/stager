@@ -153,4 +153,10 @@ class Stager < Sinatra::Base
       return 500
     end
   end
+
+  post '/slot/:slot/update_lease' do |slot|
+    slot = ActiveSlot.get(slot)
+    slot.updated_at = Time.now
+    slot.save!
+  end
 end
