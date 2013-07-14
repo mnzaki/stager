@@ -25,3 +25,6 @@ gem 'omniauth-github'
 gem 'octokit'
 
 gem 'rugged', '0.18.0.gh.de28323'
+
+
+gem 'sys-proctable'
