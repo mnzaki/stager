@@ -17,6 +17,7 @@ gem 'rake', require: false
 
 gem 'data_mapper'
 gem 'dm-sqlite-adapter'
+gem 'dm-timestamps'
 
 gem 'omniauth'
 gem 'omniauth-github'
