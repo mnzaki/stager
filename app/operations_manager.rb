@@ -70,6 +70,8 @@ class OperationsManager
       else
         attrs[:status] = 'Idle'
       end
+      server_uptime = `ps -eo etime,command | grep "rails.*#{slot.port}"`.split.first
+      attrs[:server_uptime] = server_uptime
       attrs
     end
   end

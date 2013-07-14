@@ -34,10 +34,13 @@
     %div
       Status:
       %span.status(data-bind='text: status')
-    %div:
+    %div
+      Server Up Since:
+      %span.since(data-bind='text: server_uptime')
+    %div
       Updated at:
       %span.status(data-bind='text: updated_at')
-    %div:
+    %div
       %a.update_lease(href='#') Update Lease
 
 %h3 Branches
