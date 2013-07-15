@@ -49,6 +49,7 @@ class OperationsManager
     end
 
     @slots_info = @slots.collect do |slot_name, slot|
+      refresh_pid(slot)
       attrs = slot.attributes
       attrs.delete :app_pid
       attrs.delete :job_id
@@ -70,7 +71,13 @@ class OperationsManager
       else
         attrs[:status] = 'Idle'
       end
-      server_uptime = `ps -eo etime,command | grep "rails.*#{slot.port}"`.split.first
+      ps_result = `ps -eo etime,command | grep rails.*#{slot.port}`
+      server_uptime = ps_result.split("\n").select {|i| !i.include?("grep")}.first
+      if server_uptime.nil?
+          server_uptime = "Server Inactive"
+      else
+          server_uptime = server_uptime.split.first
+      end
       attrs[:server_uptime] = server_uptime
       attrs
     end
@@ -85,6 +92,17 @@ class OperationsManager
       end
       Process.kill 'KILL', pid.to_i
     rescue Errno::ESRCH
+    end
+  end
+
+  def refresh_pid slot
+    ps_result = `ps -eo pid,command | grep "rails.*#{slot.port}"`
+    pid = ps_result.split("\n").select {|i| !i.include?("grep")}.first.to_i
+    pid = -1 if pid==0
+    if pid != slot.app_pid
+        slot.app_pid = pid
+        slot.updated_at = Time.now
+        slot.save
     end
   end
 end

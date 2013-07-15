@@ -24,3 +24,13 @@ namespace :db do
   end
 end
 
+desc 'syncronize slot app pids'
+task :sync_pids => :env do
+    ActiveSlot.all.each do |slot|
+        ps_result = `ps -eo pid,command | grep "rails.*#{slot.port}"`
+        pid = ps_result.split("\n").select {|i| !i.include?("grep")}.first.to_i
+        slot.app_pid = -1
+        slot.app_pid = pid unless pid==0
+        slot.save
+    end
+end
