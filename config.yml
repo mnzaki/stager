@@ -1,26 +1,41 @@
 # Secrets! These can be specified in secrets.yml instead
+
+# the application (and its forks) to stage:
 base_repo:
-  name: ''
+  name: 'gituser/app.git'
+  # create a github access token from the repo settings
   access_token: ''
 
+# github application key and secret to allow github login
 github:
   app_key: ''
   app_secret: ''
 
-session_secret: ''
+# cookie session secret:
+session_secret: 'replace this with something randomld91klseoqfj13r'
 
 # Settings
+
+# repos are cloned and staged in the directory structure rooted at:
 git_data_path: '/home/git'
 
+# github users who login have their ssh keys copied into:
 ssh_authorized_keys: '/home/git/.ssh/authorized_keys'
+# set that to /dev/null if you do not want this behaviour
 
+# staging activity is tracked in this file:
 staging_process_pid: 'tmp/pids/current_staging_process.pid'
+
+# the staged server's pid is stored in:
 server_pid: 'tmp/pids/server.pid'
 
+# slots start at port number:
 first_slot_port: 3000
 
+# we are hosted at:
 host: 'stager.trustious.com'
 
+# the slots available are:
 slots:
   - main
   - secondary

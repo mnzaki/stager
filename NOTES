@@ -1,0 +1,23 @@
+abstract 'actions' away so that they can be mixed and matched easily
+
+superuser config option
+superuser can do db updates and elasticsearch updates
+db/elasticsearch updates brings slots down, disables staging until over
+
+Add more actions: unstage, restage, hotfix/pull, restart server
+Hide empty repos during search
+preload all branch info
+notification on job completion
+staging branches from same repo in parallel
+push changes and don't restart server
+
+git and trustious user permissions for login and pushing
+
+add instructions and tooltips
+
+port already used fails :( kill whatever is on the port nyahahhahahaha
+
+kill always goes to 15??
+  if no such process, it retries and sleeps
+
+Search by real name too??
