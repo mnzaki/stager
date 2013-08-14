@@ -11,6 +11,11 @@ exist and are writable by the user that will run stager.
 You will need a redis server on the localhost (FIXME: make this
 configurable....)
 
+Migrate the database:
+```
+rake db:migrate
+```
+
 You can run stager like so:
 ```
 bundle exec thin -R config.ru -p 9292 start
@@ -24,3 +29,11 @@ You can use monit to run (and monitor) the servers instead. Use the files at
 `config/monit-stager.conf` and `config/monit-sidekiq.conf` for inspiration.
 
 Disclaimer: this was hacked together quickly and is fairly buggy.
+
+### Rake Tasks
+```
+$ rake -T
+rake db:migrate  # Migrate the database
+rake db:setup    # Drop and recreate the database
+rake sync_pids   # syncronize slot app pids
+```
